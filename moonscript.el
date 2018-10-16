@@ -113,21 +113,25 @@ one.
 When computing indentation depth, one tab is currently considered
 equal to one space. Tabs are currently replaced with spaces when
 re-indenting a line."
-  (goto-char (point-at-bol))
-  (let ((curlinestart (point))
-        (prevlineindent -1))
-    ;; Find indent level of previous non-blank line.
-    (while (and (< prevlineindent 0) (> (point) (point-min)))
-      (goto-char (1- (point)))
-      (goto-char (point-at-bol))
-      (setq prevlineindent (moonscript-indent-level -1)))
-    ;; Re-indent current line based on what we know.
-    (goto-char curlinestart)
-    (let* ((oldindent (moonscript-indent-level))
-           (newindent (if (= oldindent 0) (1+ prevlineindent)
-                        (1- oldindent))))
-      (replace-match (make-string (* newindent moonscript-indent-offset)
-                                  ? )))))
+  (let ((orig-point (point)))
+    (goto-char (point-at-bol))
+    (let ((curlinestart (point))
+	  (prevlineindent -1))
+      ;; Find indent level of previous non-blank line.
+      (while (and (< prevlineindent 0) (> (point) (point-min)))
+	(goto-char (1- (point)))
+	(goto-char (point-at-bol))
+	(setq prevlineindent (moonscript-indent-level -1)))
+      ;; Re-indent current line based on what we know.
+      (goto-char curlinestart)
+      (let* ((oldindent (moonscript-indent-level))
+	     (newindent (if (not (eq this-command 'newline))
+			    (if (= oldindent (1+ prevlineindent)) 0
+			      (1+ oldindent))
+			  prevlineindent)))
+	(replace-match (make-string (* newindent moonscript-indent-offset)
+				    ? ))
+	(goto-char (+ (- orig-point (* oldindent moonscript-indent-offset)) (* newindent moonscript-indent-offset)))))))
 
 ;;;###autoload
 (define-derived-mode moonscript-mode prog-mode "MoonScript"
